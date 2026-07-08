@@ -5,7 +5,7 @@ import {
   redirect,
   useLocation,
 } from "@tanstack/react-router";
-import { Settings, Shield } from "lucide-react";
+import { GhostIcon, Settings, Shield } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -60,6 +60,13 @@ function RouteComponent() {
       title: t("settings:workspaceRoles.title", { defaultValue: "Roles" }),
       url: "/dashboard/settings/workspace/roles",
       icon: Shield,
+    },
+    {
+      title: t("settings:workspaceSilentMembers.title", {
+        defaultValue: "Silent members",
+      }),
+      url: "/dashboard/settings/workspace/silent-members",
+      icon: GhostIcon,
     },
   ];
   const isActivePath = (path: string) => location.pathname === path;
