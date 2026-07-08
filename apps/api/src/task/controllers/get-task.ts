@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import db from "../../database";
 import { taskTable, userTable } from "../../database/schema";
+import getTaskWatchers from "./get-task-watchers";
 
 async function getTask(taskId: string) {
   const task = await db
@@ -32,7 +33,9 @@ async function getTask(taskId: string) {
     });
   }
 
-  return task[0];
+  const watchers = await getTaskWatchers(taskId);
+
+  return { ...task[0], watchers };
 }
 
 export default getTask;

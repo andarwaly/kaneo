@@ -4,6 +4,7 @@ import db from "../../database";
 import { columnTable, taskTable, userTable } from "../../database/schema";
 import { publishEvent } from "../../events";
 import { assertValidTaskStatus } from "../validate-task-fields";
+import addTaskWatcher from "./add-task-watcher";
 import getNextTaskNumber from "./get-next-task-number";
 
 async function createTask({
@@ -82,6 +83,8 @@ async function createTask({
       message: "Failed to create task",
     });
   }
+
+  await addTaskWatcher({ taskId: createdTask.id, userId: currentUserId });
 
   await publishEvent("task.created", {
     ...createdTask,

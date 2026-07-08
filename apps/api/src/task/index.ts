@@ -20,14 +20,17 @@ import {
 import { normalizeApiServerUrl } from "../utils/openapi-spec";
 import { requireWorkspacePermission } from "../utils/require-workspace-permission";
 import { workspaceAccess } from "../utils/workspace-access-middleware";
+import addTaskWatcherCtrl from "./controllers/add-task-watcher";
 import bulkUpdateTasks from "./controllers/bulk-update-tasks";
 import createTask from "./controllers/create-task";
 import deleteTask from "./controllers/delete-task";
 import exportTasks from "./controllers/export-tasks";
 import getTask from "./controllers/get-task";
+import getTaskWatchersCtrl from "./controllers/get-task-watchers";
 import getTasks from "./controllers/get-tasks";
 import importTasks from "./controllers/import-tasks";
 import moveTask from "./controllers/move-task";
+import removeTaskWatcherCtrl from "./controllers/remove-task-watcher";
 import updateTask from "./controllers/update-task";
 import updateTaskAssignee from "./controllers/update-task-assignee";
 import updateTaskDescription from "./controllers/update-task-description";
@@ -534,6 +537,66 @@ const task = new Hono<{
       const task = await updateTaskAssignee({ id, userId, currentUserId });
 
       return c.json(task);
+    },
+  )
+  .post(
+    "/:id/watchers",
+    describeRoute({
+      operationId: "addTaskWatcher",
+      tags: ["Tasks"],
+      description: "Add a watcher to a task",
+      responses: {
+        200: { description: "Watcher added" },
+      },
+    }),
+    validator("param", v.object({ id: v.string() })),
+    validator("json", v.object({ userId: v.string() })),
+    workspaceAccess.fromTask(),
+    requireWorkspacePermission({ task: ["update"] }),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const { userId } = c.req.valid("json");
+      await addTaskWatcherCtrl({ taskId: id, userId });
+      const watchers = await getTaskWatchersCtrl(id);
+      return c.json(watchers);
+    },
+  )
+  .delete(
+    "/:id/watchers/:userId",
+    describeRoute({
+      operationId: "removeTaskWatcher",
+      tags: ["Tasks"],
+      description: "Remove a watcher from a task",
+      responses: {
+        200: { description: "Watcher removed" },
+      },
+    }),
+    validator("param", v.object({ id: v.string(), userId: v.string() })),
+    workspaceAccess.fromTask(),
+    requireWorkspacePermission({ task: ["update"] }),
+    async (c) => {
+      const { id, userId } = c.req.valid("param");
+      await removeTaskWatcherCtrl({ taskId: id, userId });
+      const watchers = await getTaskWatchersCtrl(id);
+      return c.json(watchers);
+    },
+  )
+  .get(
+    "/:id/watchers",
+    describeRoute({
+      operationId: "getTaskWatchers",
+      tags: ["Tasks"],
+      description: "List watchers for a task",
+      responses: {
+        200: { description: "List of watchers" },
+      },
+    }),
+    validator("param", v.object({ id: v.string() })),
+    workspaceAccess.fromTask(),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const watchers = await getTaskWatchersCtrl(id);
+      return c.json(watchers);
     },
   )
   .put(
