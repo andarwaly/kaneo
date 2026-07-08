@@ -43,6 +43,7 @@ import { getGithubSsoOAuthCredentials } from "./utils/github-sso-env";
 import { isCloud } from "./utils/is-cloud";
 import { isDisposableEmail } from "./utils/is-disposable-email";
 import { verifyTurnstile } from "./utils/verify-turnstile";
+import guardSilentMemberRoleUpdate from "./workspace/controllers/guard-silent-member-role-update";
 
 config();
 
@@ -331,6 +332,17 @@ export const auth = betterAuth({
       // that rather than on email verification.
       requireEmailVerificationOnInvitation: false,
       organizationHooks: {
+        beforeUpdateMemberRole: async ({ member, newRole }) => {
+          // Silent members (Task 2's POST /:workspaceId/silent-members)
+          // are assignable placeholders with no login access. They must
+          // never hold admin/owner roles under any code path — this hook
+          // fires for every /organization/update-member-role request,
+          // which is the only way a workspace member's role changes.
+          await guardSilentMemberRoleUpdate({
+            userId: member.userId,
+            role: newRole,
+          });
+        },
         beforeCreateOrganization: async ({ organization }) => {
           const check = checkWorkspaceName(organization.name ?? "");
           if (!check.ok) {
