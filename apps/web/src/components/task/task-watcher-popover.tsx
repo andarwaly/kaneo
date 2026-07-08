@@ -12,11 +12,19 @@ import { useAddTaskWatcher } from "@/hooks/mutations/task/use-add-task-watcher";
 import { useRemoveTaskWatcher } from "@/hooks/mutations/task/use-remove-task-watcher";
 import { useTaskWatchers } from "@/hooks/queries/task/use-task-watchers";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
+import type { WorkspaceUser } from "@/types/workspace-user";
 
 type TaskWatcherPopoverProps = {
   taskId: string;
   workspaceId: string;
   children: React.ReactNode;
+};
+
+type UserOption = {
+  value: string;
+  image: string;
+  name: string;
+  isSilent: boolean;
 };
 
 export function TaskWatcherPopover({
@@ -30,7 +38,7 @@ export function TaskWatcherPopover({
   const { mutate: removeWatcher } = useRemoveTaskWatcher(taskId);
 
   const usersOptions = useMemo(() => {
-    return workspaceUsers?.members?.map((member) => ({
+    return workspaceUsers?.members?.map((member: WorkspaceUser) => ({
       value: member.userId,
       image: member?.user?.image ?? "",
       name: member?.user?.name ?? member.userId,
@@ -56,7 +64,7 @@ export function TaskWatcherPopover({
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent className="w-56 p-0" align="start">
         <div className="max-h-80 space-y-1 overflow-y-auto p-1">
-          {(usersOptions ?? []).map((user) => {
+          {(usersOptions ?? []).map((user: UserOption) => {
             const isWatching = watcherIds.has(user.value);
             return (
               <Button
