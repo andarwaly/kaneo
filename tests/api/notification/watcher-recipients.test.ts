@@ -50,4 +50,19 @@ describe("resolveTaskNotificationRecipients", () => {
 
     expect(recipients.sort()).toEqual(["user_watcher_1"]);
   });
+
+  it("includes non-silent watchers alongside the new assignee for task.assignee_changed", async () => {
+    getTaskWatchersMock.mockResolvedValue([
+      { id: "user_new_assignee", name: "A", image: null, isSilent: false },
+      { id: "user_watcher_2", name: "B", image: null, isSilent: false },
+      { id: "user_silent_watcher", name: "C", image: null, isSilent: true },
+    ]);
+
+    const recipients = await resolveTaskNotificationRecipients(
+      "task_1",
+      "user_new_assignee",
+    );
+
+    expect(recipients.sort()).toEqual(["user_new_assignee", "user_watcher_2"]);
+  });
 });

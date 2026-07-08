@@ -288,7 +288,15 @@ subscribeToEvent<{
   newAssigneeId: string;
   title: string;
 }>("task.assignee_changed", async (data) => {
-  if (data.newAssigneeId) {
+  const recipientIds = await resolveTaskNotificationRecipients(
+    data.taskId,
+    data.newAssigneeId,
+  );
+  const notifiableRecipientIds = recipientIds.filter(
+    (recipientId) => recipientId !== data.userId,
+  );
+
+  if (notifiableRecipientIds.length > 0) {
     const [task] = await db
       .select({ projectId: taskTable.projectId })
       .from(taskTable)
@@ -303,17 +311,21 @@ subscribeToEvent<{
           .limit(1)
       : [];
 
-    await createNotification({
-      userId: data.newAssigneeId,
-      type: "task_assignee_changed",
-      eventData: {
-        taskTitle: data.title,
-        projectId: task?.projectId ?? null,
-        workspaceId: project?.workspaceId ?? null,
-      },
-      resourceId: data.taskId,
-      resourceType: "task",
-    });
+    await Promise.all(
+      notifiableRecipientIds.map((recipientId) =>
+        createNotification({
+          userId: recipientId,
+          type: "task_assignee_changed",
+          eventData: {
+            taskTitle: data.title,
+            projectId: task?.projectId ?? null,
+            workspaceId: project?.workspaceId ?? null,
+          },
+          resourceId: data.taskId,
+          resourceType: "task",
+        }),
+      ),
+    );
   }
 });
 
