@@ -32,6 +32,7 @@ export default function TaskAssigneePopover({
 }: TaskAssigneePopoverProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [alsoWatch, setAlsoWatch] = useState(true);
   const [visibleUsersCount, setVisibleUsersCount] = useState(
     INITIAL_VISIBLE_USERS,
   );
@@ -55,6 +56,7 @@ export default function TaskAssigneePopover({
         await updateTaskAssignee({
           ...task,
           userId: newUserId,
+          alsoWatch,
         });
         setOpen(false);
       } catch (error) {
@@ -65,7 +67,7 @@ export default function TaskAssigneePopover({
         );
       }
     },
-    [t, task, updateTaskAssignee],
+    [t, task, updateTaskAssignee, alsoWatch],
   );
 
   const shortcutOptions = useMemo(() => {
@@ -111,6 +113,14 @@ export default function TaskAssigneePopover({
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent className="w-56 p-0" align="start">
+        <label className="flex items-center gap-2 px-2 py-1.5 text-sm border-b border-border">
+          <input
+            type="checkbox"
+            checked={alsoWatch}
+            onChange={(e) => setAlsoWatch(e.target.checked)}
+          />
+          Also add as watcher
+        </label>
         <div
           className="max-h-80 space-y-1 overflow-y-auto p-1"
           onScroll={handleListScroll}
