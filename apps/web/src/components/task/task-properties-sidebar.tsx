@@ -4,6 +4,7 @@ import {
   CalendarDays,
   CalendarX,
   Copy,
+  Eye,
   GitBranch,
   Plus,
 } from "lucide-react";
@@ -41,6 +42,7 @@ import TaskMovePopover from "./task-move-popover";
 import TaskPriorityPopover from "./task-priority-popover";
 import TaskStartDatePopover from "./task-start-date-popover";
 import TaskStatusPopover from "./task-status-popover";
+import { TaskWatcherPopover } from "./task-watcher-popover";
 
 function slugify(text: string | undefined): string {
   if (!text) return "";
@@ -258,6 +260,18 @@ export default function TaskPropertiesSidebar({
                 </TaskAssigneePopover>
               )}
               {task && (
+                <TaskWatcherPopover taskId={task.id} workspaceId={workspaceId}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="justify-start h-7 px-1.5 gap-1.5"
+                  >
+                    <Eye className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-xs font-semibold">Watchers</span>
+                  </Button>
+                </TaskWatcherPopover>
+              )}
+              {task && (
                 <TaskStartDatePopover task={task}>
                   <Button
                     variant="ghost"
@@ -444,6 +458,21 @@ export default function TaskPropertiesSidebar({
                       </span>
                     </Button>
                   </TaskAssigneePopover>
+                )}
+                {task && (
+                  <TaskWatcherPopover
+                    taskId={task.id}
+                    workspaceId={workspaceId}
+                  >
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="justify-start h-7 px-1.5 gap-1.5"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-xs font-semibold">Watchers</span>
+                    </Button>
+                  </TaskWatcherPopover>
                 )}
                 {task && (
                   <TaskStartDatePopover task={task}>
@@ -635,6 +664,21 @@ export default function TaskPropertiesSidebar({
                       </span>
                     </Button>
                   </TaskAssigneePopover>
+                )}
+                {task && (
+                  <TaskWatcherPopover
+                    taskId={task.id}
+                    workspaceId={workspaceId}
+                  >
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="justify-start h-7 px-1.5 gap-1.5"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-xs font-semibold">Watchers</span>
+                    </Button>
+                  </TaskWatcherPopover>
                 )}
                 {task && (
                   <TaskStartDatePopover task={task}>
