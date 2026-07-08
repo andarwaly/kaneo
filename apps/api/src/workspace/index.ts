@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { describeRoute, resolver, validator } from "hono-openapi";
 import * as v from "valibot";
+import { requireWorkspacePermission } from "../utils/require-workspace-permission";
 import { workspaceAccess } from "../utils/workspace-access-middleware";
 import createSilentMemberCtrl from "./controllers/create-silent-member";
 import getWorkspaceMembersCtrl from "./controllers/get-workspace-members";
@@ -82,6 +83,7 @@ const workspace = new Hono<{
       }),
     ),
     workspaceAccess.fromParam("workspaceId"),
+    requireWorkspacePermission({ workspace: ["manage_settings"] }),
     async (c) => {
       const workspaceId = c.get("workspaceId");
       const { name, email } = c.req.valid("json");

@@ -650,6 +650,56 @@ describe("API integration: workspace RBAC enforcement", () => {
     });
   });
 
+  describe("resource coverage: workspace:manage_settings (silent members)", () => {
+    it("blocks a member from creating a silent member", async () => {
+      const member = await createWorkspaceMember({ role: "member" });
+      mockAuthenticatedSession(member.user);
+      const { app } = createApp();
+
+      const response = await app.request(
+        `/api/workspace/${member.workspace.id}/silent-members`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ name: "Ghost User" }),
+        },
+      );
+      expect(response.status).toBe(403);
+    });
+
+    it("blocks a viewer from creating a silent member", async () => {
+      const member = await createWorkspaceMember({ role: "viewer" });
+      mockAuthenticatedSession(member.user);
+      const { app } = createApp();
+
+      const response = await app.request(
+        `/api/workspace/${member.workspace.id}/silent-members`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ name: "Ghost User" }),
+        },
+      );
+      expect(response.status).toBe(403);
+    });
+
+    it("allows an admin to create a silent member", async () => {
+      const member = await createWorkspaceMember({ role: "admin" });
+      mockAuthenticatedSession(member.user);
+      const { app } = createApp();
+
+      const response = await app.request(
+        `/api/workspace/${member.workspace.id}/silent-members`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ name: "Ghost User" }),
+        },
+      );
+      expect(response.status).toBe(200);
+    });
+  });
+
   describe("instance admin bypass", () => {
     it("bypasses the workspace permission check when user.role === 'admin'", async () => {
       const member = await createWorkspaceMember({ role: "viewer" });
