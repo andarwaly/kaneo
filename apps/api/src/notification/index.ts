@@ -6,11 +6,35 @@ import db from "../database";
 import { projectTable, taskTable } from "../database/schema";
 import { subscribeToEvent } from "../events";
 import { notificationSchema } from "../schemas";
+import getTaskWatchers from "../task/controllers/get-task-watchers";
 import clearNotifications from "./controllers/clear-notifications";
 import createNotification from "./controllers/create-notification";
 import getNotifications from "./controllers/get-notifications";
 import markAllNotificationsAsRead from "./controllers/mark-all-notifications-as-read";
 import markAsRead from "./controllers/mark-notification-as-read";
+
+/**
+ * Resolves the set of user IDs who should be notified about an event on a
+ * task: the primary recipient (e.g. the assignee), plus every task watcher,
+ * de-duplicated. Watchers flagged `isSilent` are excluded — they only watch
+ * quietly and should not receive notifications.
+ */
+export async function resolveTaskNotificationRecipients(
+  taskId: string,
+  primaryRecipientId?: string | null,
+): Promise<string[]> {
+  const watchers = await getTaskWatchers(taskId);
+  const watcherIds = watchers
+    .filter((watcher) => !watcher.isSilent)
+    .map((watcher) => watcher.id);
+
+  const recipientIds = new Set<string>(watcherIds);
+  if (primaryRecipientId) {
+    recipientIds.add(primaryRecipientId);
+  }
+
+  return Array.from(recipientIds);
+}
 
 const bulkResultSchema = v.object({
   success: v.boolean(),
@@ -213,7 +237,15 @@ subscribeToEvent<{
   title: string;
   assigneeId?: string;
 }>("task.status_changed", async (data) => {
-  if (data.assigneeId && data.assigneeId !== data.userId) {
+  const recipientIds = await resolveTaskNotificationRecipients(
+    data.taskId,
+    data.assigneeId,
+  );
+  const notifiableRecipientIds = recipientIds.filter(
+    (recipientId) => recipientId !== data.userId,
+  );
+
+  if (notifiableRecipientIds.length > 0) {
     const [task] = await db
       .select({ projectId: taskTable.projectId })
       .from(taskTable)
@@ -228,19 +260,23 @@ subscribeToEvent<{
           .limit(1)
       : [];
 
-    await createNotification({
-      userId: data.assigneeId,
-      type: "task_status_changed",
-      eventData: {
-        taskTitle: data.title,
-        oldStatus: data.oldStatus,
-        newStatus: data.newStatus,
-        projectId: task?.projectId ?? null,
-        workspaceId: project?.workspaceId ?? null,
-      },
-      resourceId: data.taskId,
-      resourceType: "task",
-    });
+    await Promise.all(
+      notifiableRecipientIds.map((recipientId) =>
+        createNotification({
+          userId: recipientId,
+          type: "task_status_changed",
+          eventData: {
+            taskTitle: data.title,
+            oldStatus: data.oldStatus,
+            newStatus: data.newStatus,
+            projectId: task?.projectId ?? null,
+            workspaceId: project?.workspaceId ?? null,
+          },
+          resourceId: data.taskId,
+          resourceType: "task",
+        }),
+      ),
+    );
   }
 });
 
