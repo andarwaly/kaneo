@@ -526,15 +526,23 @@ const task = new Hono<{
       },
     }),
     validator("param", v.object({ id: v.string() })),
-    validator("json", v.object({ userId: v.string() })),
+    validator(
+      "json",
+      v.object({ userId: v.string(), alsoWatch: v.optional(v.boolean()) }),
+    ),
     workspaceAccess.fromTask(),
     requireWorkspacePermission({ task: ["assign"] }),
     async (c) => {
       const { id } = c.req.valid("param");
-      const { userId } = c.req.valid("json");
+      const { userId, alsoWatch } = c.req.valid("json");
       const currentUserId = c.get("userId");
 
-      const task = await updateTaskAssignee({ id, userId, currentUserId });
+      const task = await updateTaskAssignee({
+        id,
+        userId,
+        currentUserId,
+        alsoWatch,
+      });
 
       return c.json(task);
     },

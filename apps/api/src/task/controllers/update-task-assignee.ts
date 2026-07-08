@@ -3,15 +3,18 @@ import { HTTPException } from "hono/http-exception";
 import db from "../../database";
 import { taskTable, userTable } from "../../database/schema";
 import { publishEvent } from "../../events";
+import addTaskWatcher from "./add-task-watcher";
 
 async function updateTaskAssignee({
   id,
   userId,
   currentUserId,
+  alsoWatch,
 }: {
   id: string;
   userId: string;
   currentUserId: string;
+  alsoWatch?: boolean;
 }) {
   const existingTask = await db.query.taskTable.findFirst({
     where: eq(taskTable.id, id),
@@ -72,6 +75,10 @@ async function updateTaskAssignee({
     title: updatedTask.title,
     type: "assignee_changed",
   });
+
+  if (alsoWatch && userId) {
+    await addTaskWatcher({ taskId: updatedTask.id, userId });
+  }
 
   return updatedTask;
 }
