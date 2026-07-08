@@ -1,4 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
+import { HTTPException } from "hono/http-exception";
 import db from "../../database";
 import { userTable, workspaceUserTable } from "../../database/schema";
 
@@ -25,6 +26,12 @@ async function createSilentMember({
     })
     .returning();
 
+  if (!user) {
+    throw new HTTPException(500, {
+      message: "Failed to create silent member",
+    });
+  }
+
   const [member] = await db
     .insert(workspaceUserTable)
     .values({
@@ -34,6 +41,12 @@ async function createSilentMember({
       joinedAt: new Date(),
     })
     .returning();
+
+  if (!member) {
+    throw new HTTPException(500, {
+      message: "Failed to add silent member to workspace",
+    });
+  }
 
   return {
     id: user.id,
