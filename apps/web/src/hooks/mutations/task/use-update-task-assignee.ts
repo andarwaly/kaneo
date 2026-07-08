@@ -29,6 +29,9 @@ export function useUpdateTaskAssignee() {
       queryClient.invalidateQueries({
         queryKey: ["task-relations"],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["task-watchers", variables.id],
+      });
     },
   });
 }
