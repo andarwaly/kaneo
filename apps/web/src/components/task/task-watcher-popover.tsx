@@ -11,6 +11,7 @@ import { SilentMemberBadge } from "@/components/ui/silent-member-badge";
 import { useAddTaskWatcher } from "@/hooks/mutations/task/use-add-task-watcher";
 import { useRemoveTaskWatcher } from "@/hooks/mutations/task/use-remove-task-watcher";
 import { useTaskWatchers } from "@/hooks/queries/task/use-task-watchers";
+import useGetWorkspaceMembers from "@/hooks/queries/workspace-user/use-get-workspace-members";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
 import type { WorkspaceUser } from "@/types/workspace-user";
 
@@ -34,17 +35,28 @@ export function TaskWatcherPopover({
 }: TaskWatcherPopoverProps) {
   const { data: watchers } = useTaskWatchers(taskId);
   const { data: workspaceUsers } = useGetActiveWorkspaceUsers(workspaceId);
+  const { data: workspaceMembers } = useGetWorkspaceMembers(workspaceId);
   const { mutate: addWatcher } = useAddTaskWatcher(taskId);
   const { mutate: removeWatcher } = useRemoveTaskWatcher(taskId);
+
+  const silentMemberIds = useMemo(
+    () =>
+      new Set(
+        (workspaceMembers ?? [])
+          .filter((member) => member.isSilent)
+          .map((member) => member.id),
+      ),
+    [workspaceMembers],
+  );
 
   const usersOptions = useMemo(() => {
     return workspaceUsers?.members?.map((member: WorkspaceUser) => ({
       value: member.userId,
       image: member?.user?.image ?? "",
       name: member?.user?.name ?? member.userId,
-      isSilent: member.isSilent ?? false,
+      isSilent: silentMemberIds.has(member.userId),
     }));
-  }, [workspaceUsers]);
+  }, [workspaceUsers, silentMemberIds]);
 
   const watcherIds = useMemo(
     () => new Set((watchers ?? []).map((watcher) => watcher.id)),

@@ -9,7 +9,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ShortcutNumber } from "@/components/ui/shortcut-number";
+import { SilentMemberBadge } from "@/components/ui/silent-member-badge";
 import { useUpdateTaskAssignee } from "@/hooks/mutations/task/use-update-task-assignee";
+import useGetWorkspaceMembers from "@/hooks/queries/workspace-user/use-get-workspace-members";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
 import { useNumberedShortcuts } from "@/hooks/use-numbered-shortcuts";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
@@ -38,8 +40,19 @@ export default function TaskAssigneePopover({
   );
   const { mutateAsync: updateTaskAssignee } = useUpdateTaskAssignee();
   const { data: workspaceUsers } = useGetActiveWorkspaceUsers(workspaceId);
+  const { data: workspaceMembers } = useGetWorkspaceMembers(workspaceId);
   const { canAssignTasks } = useWorkspacePermission();
   const canAssign = canAssignTasks();
+
+  const silentMemberIds = useMemo(
+    () =>
+      new Set(
+        (workspaceMembers ?? [])
+          .filter((member) => member.isSilent)
+          .map((member) => member.id),
+      ),
+    [workspaceMembers],
+  );
 
   const usersOptions = useMemo(() => {
     return workspaceUsers?.members?.map((member) => ({
@@ -47,8 +60,9 @@ export default function TaskAssigneePopover({
       value: member.userId,
       image: member?.user?.image ?? "",
       name: member?.user?.name ?? "",
+      isSilent: silentMemberIds.has(member.userId),
     }));
-  }, [workspaceUsers]);
+  }, [workspaceUsers, silentMemberIds]);
 
   const handleAssigneeChange = useCallback(
     async (newUserId: string) => {
@@ -163,6 +177,7 @@ export default function TaskAssigneePopover({
                 </AvatarFallback>
               </Avatar>
               <span className="text-sm truncate">{user.label}</span>
+              {user.isSilent && <SilentMemberBadge />}
               {task.userId === user.value ? (
                 <Check className="ml-auto h-4 w-4 shrink-0" />
               ) : index < 8 ? (

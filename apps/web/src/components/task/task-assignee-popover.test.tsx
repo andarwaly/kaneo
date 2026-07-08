@@ -2,12 +2,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@/hooks/queries/task/use-task-watchers", () => ({
-  useTaskWatchers: () => ({
-    data: [{ id: "user_1", name: "Dinda", image: null, isSilent: true }],
-  }),
-}));
-
 vi.mock(
   "@/hooks/queries/workspace-users/use-get-active-workspace-users",
   () => ({
@@ -39,15 +33,17 @@ vi.mock("@/hooks/queries/workspace-user/use-get-workspace-members", () => ({
   }),
 }));
 
-vi.mock("@/hooks/mutations/task/use-add-task-watcher", () => ({
-  useAddTaskWatcher: () => ({ mutate: vi.fn() }),
+vi.mock("@/hooks/mutations/task/use-update-task-assignee", () => ({
+  useUpdateTaskAssignee: () => ({ mutateAsync: vi.fn() }),
 }));
 
-vi.mock("@/hooks/mutations/task/use-remove-task-watcher", () => ({
-  useRemoveTaskWatcher: () => ({ mutate: vi.fn() }),
+vi.mock("@/hooks/use-workspace-permission", () => ({
+  useWorkspacePermission: () => ({
+    canAssignTasks: () => true,
+  }),
 }));
 
-import { TaskWatcherPopover } from "./task-watcher-popover";
+import TaskAssigneePopover from "./task-assignee-popover";
 
 function renderWithClient(ui: React.ReactElement) {
   const queryClient = new QueryClient();
@@ -56,15 +52,18 @@ function renderWithClient(ui: React.ReactElement) {
   );
 }
 
-describe("TaskWatcherPopover", () => {
-  it("shows current watchers including silent members", async () => {
+describe("TaskAssigneePopover", () => {
+  it("shows a silent member badge for silent workspace members", async () => {
     renderWithClient(
-      <TaskWatcherPopover taskId="task_1" workspaceId="workspace_1">
-        <button type="button">Watchers</button>
-      </TaskWatcherPopover>,
+      <TaskAssigneePopover
+        task={{ id: "task_1", userId: null } as never}
+        workspaceId="workspace_1"
+      >
+        <button type="button">Assignee</button>
+      </TaskAssigneePopover>,
     );
 
-    fireEvent.click(screen.getByText("Watchers"));
+    fireEvent.click(screen.getByText("Assignee"));
 
     expect(await screen.findByText("Dinda")).toBeInTheDocument();
     expect(
